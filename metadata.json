@@ -1,0 +1,5 @@
+{
+  "name": "SlideGen AI",
+  "description": "Generate 16:9 slides and Draw.io XML from text, voice, or image prompts.",
+  "requestFramePermissions": ["microphone"]
+}
