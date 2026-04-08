@@ -5,6 +5,7 @@
 
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { SlideElement } from "./types";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -68,3 +69,29 @@ export const resizeImage = (base64Str: string, maxWidth = 512, maxHeight = 512):
     img.onerror = () => resolve(base64Str);
   });
 };
+
+export function detectAndFixOverlaps(elements: SlideElement[]): SlideElement[] {
+  const textElements = elements.filter(el => el.type === 'text');
+  const nonTextElements = elements.filter(el => el.type !== 'text');
+
+  const sorted = [...textElements].sort((a, b) => a.y - b.y);
+
+  for (let i = 0; i < sorted.length; i++) {
+    for (let j = i + 1; j < sorted.length; j++) {
+      const a = sorted[i];
+      const b = sorted[j];
+      const xOverlap = a.x < b.x + b.w && b.x < a.x + a.w;
+      if (!xOverlap) continue;
+      const yOverlap = a.y < b.y + b.h && b.y < a.y + a.h;
+      if (!yOverlap) continue;
+      const newY = a.y + a.h + 2;
+      sorted[j] = { ...sorted[j], y: newY };
+      const overflow = newY + sorted[j].h - 100;
+      if (overflow > 0) {
+        sorted[j] = { ...sorted[j], h: Math.max(sorted[j].h - overflow, 5) };
+      }
+    }
+  }
+
+  return [...nonTextElements, ...sorted];
+}

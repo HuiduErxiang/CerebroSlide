@@ -60,8 +60,8 @@ export const LAYOUT_PRESETS: LayoutPreset[] = [
 ];
 
 export const MODELS: ModelOption[] = [
-  { id: "gemini-3-flash-preview", name: "Gemini 3 Flash", description: "快速且高效 (推荐)" },
-  { id: "gemini-3.1-pro-preview", name: "Gemini 3.1 Pro", description: "最强逻辑与创意" },
+  { id: "gemini-3.1-flash-lite-preview", name: "Gemini 3.1 Flash Lite", description: "输入多模态，输出文本，性价比高（推荐）" },
+  { id: "gemini-3-flash-preview", name: "Gemini 3 Flash", description: "输入多模态，输出文本，" }
 ];
 
 export const DEFAULT_COLORS = ["#F5F5F4", "#059669", "#D1D5DB", "#141414"];
@@ -295,7 +295,8 @@ export const SYSTEM_INSTRUCTION = (
   keyData?: { label: string; value: string; unit?: string }[],
   quotes?: { text: string; author?: string }[],
   highlights?: string[],
-  suggestedLayout?: string
+  suggestedLayout?: string,
+  scenarioId?: string
 ) => `You are a world-class presentation designer, specializing in high-end editorial and tech-focused layouts.
 Your task is to generate a structured JSON representation of a 16:9 PowerPoint slide that looks like it was crafted by a human pro.
 
@@ -334,12 +335,12 @@ CRITICAL DESIGN RULES (NON-NEGOTIABLE):
 4. QUOTE BLOCKS:
    - Use a distinct background or a large decorative quote mark.
    - Ensure the author's name is clearly attributed in a smaller, elegant font.
-4. COLOR ADHERENCE: You MUST use the hex codes provided in the palette.
+4. COLOR ADHERENCE: You MUST use the hex codes provided in the palette. ALL text elements MUST use "${colors[3]}" as their color. Black (#000000) is FORBIDDEN as text color. This is NON-NEGOTIABLE.
 5. MANDATORY ROUNDED CORNERS: EVERY rectangle or text container MUST have "cornerRadius": ${config.cornerRadius}.
-6. VISUAL HIERARCHY & FONT SIZE:
-   - Titles: ${config.titleFontSize}pt.
-   - Subtitles: ${config.subtitleFontSize}pt.
-   - Body text: ${config.bodyFontSize}pt.
+6. VISUAL HIERARCHY & FONT SIZE (NON-NEGOTIABLE - DO NOT DEVIATE):
+   - ALL title elements MUST use EXACTLY ${config.titleFontSize}pt. DO NOT deviate under any circumstance.
+   - ALL subtitle elements MUST use EXACTLY ${config.subtitleFontSize}pt. DO NOT deviate under any circumstance.
+   - ALL body/content text elements MUST use EXACTLY ${config.bodyFontSize}pt. DO NOT deviate under any circumstance.
    - Data Values: ${Math.round(config.bodyFontSize * 1.3)}pt (Zoomed 30% from body).
    - Data Labels: ${config.bodyFontSize}pt.
 7. NO REFERENCE IMAGE AS CONTENT: DO NOT use the provided style reference image as a background or content element.
@@ -351,6 +352,9 @@ CRITICAL DESIGN RULES (NON-NEGOTIABLE):
 10. BACKGROUND IMAGE STRATEGY:
    - If the style is "Atmospheric", "Immersive", or "Cinematic", or if the content is highly visual, you SHOULD generate a background image.
    - To set a background image: Include an element with type="image", x:0, y:0, w:100, h:100 at the start of the elements array.
+   - WHENEVER you include a background image element, you MUST ALSO populate the "imagePrompts" array with at least one prompt describing that image.
+   - imagePrompts format: [{ "prompt": "detailed visual description", "aspectRatio": "16:9" }]
+   - If no background image is needed, omit the imagePrompts field entirely.
 11. DECORATIVE ELEMENTS & ICONS:
    - Icon Restriction: Icons/Emojis should ONLY be placed near the main title or section headers.
    - Body Text Enhancement: For important paragraphs, use "Color Bars" (thin vertical rectangles) to the left of the text.
@@ -359,28 +363,45 @@ CRITICAL DESIGN RULES (NON-NEGOTIABLE):
    - IF layout is 'center-hero': This is a COVER slide. Focus ONLY on Title and Subtitle. DO NOT render Data Cards or Quote Blocks here unless they are part of the title branding. Keep it clean and impactful.
    - IF layout is 'data-focus': Prioritize Key Data cards.
    - IF layout is 'expert-quote': Prioritize the Quote block.
+13. STRICT TEXT STYLE ENFORCEMENT (MANDATORY):
+   - ALL text elements MUST have style.fontFamily = "${fontFamily}". No other font is permitted.
+   - ALL text elements MUST have style.color = "${colors[3]}". Black (#000000) is FORBIDDEN as text color.
+   - style.color and style.fontFamily are REQUIRED fields for every text element. Do NOT omit them.
+14. NO OVERLAP RULE (MANDATORY):
+   - Adjacent text elements MUST have at least 2% vertical gap between them (i.e., next element's y >= previous element's y + h + 2).
+   - Layout coordinate guides (do NOT place elements outside their designated zone):
+     * split-left: left text area x:0–48, right area x:52–100
+     * split-right: left area x:0–48, right text area x:52–100
+     * grid-3: col1 x:0–30, col2 x:35–65, col3 x:70–100
+     * top-bottom: header y:0–20, content y:25–90
+15. TITLE & SUBTITLE POSITION CONSISTENCY (MANDATORY):
+   - For ALL layouts EXCEPT center-hero and full-image:
+     * Title element: y MUST be 3–10, h MUST be 10–18
+     * Subtitle element (if present): y MUST be title.y + title.h + 2 (approximately 15–26), h MUST be 8–14
+   - For center-hero layout:
+     * Title element: y MUST be 28–42 (vertically centered), h MUST be 12–22
+     * Subtitle element (if present): y MUST be title.y + title.h + 3, h MUST be 8–14
+   - For full-image layout: title and subtitle placement is flexible but must remain in the top 50% of the slide.
+   - ALL body/content elements MUST start below y = 28 to avoid colliding with the title zone.
+   - This rule ensures visual consistency across all slides in the same presentation.
+16. DECORATIVE ACCENTS (MANDATORY - apply based on scenario + layout):
 
-TECHNICAL SCHEMA:
-{
-  "title": "...",
-  "description": "...",
-  "elements": [
-    {
-      "type": "text/shape/image",
-      "x": 0-100, "y": 0-100, "w": 0-100, "h": 0-100,
-      "content": "...",
-      "style": {
-        "fontSize": number,
-        "color": "hex",
-        "fill": "hex",
-        "opacity": 0-1,
-        "cornerRadius": ${config.cornerRadius},
-        "shadow": true,
-        "bold": boolean,
-        "align": "left/center/right"
-      }
-    }
-  ]
-}
+   SCENARIO TONE (controls richness and color intensity of decorations):
+   - academic: MINIMAL — only thin lines allowed (w≤1%, accent color, opacity≤0.4). NO emoji in decorations. Number labels use plain text only.
+   - general: MODERATE — accent color blocks, short lines, numbered badge shapes allowed. Emoji only via decorativeIcon field.
+   - business: PRECISE — high-contrast accent solid blocks, square badges (not round), sharp angles. NO emoji.
+   - creative: RICH — multiple accent color blocks, large emoji decorations, irregular line widths, badges encouraged, use all palette colors freely.
+   - ted: ULTRA-MINIMAL — at most 1 decoration total: either 1 thick accent line OR 1 large decorativeIcon. Nothing else.
+   Current scenario: ${scenarioId || 'general'}
+
+   LAYOUT-SPECIFIC DECORATION RULES (apply within scenario constraints above):
+   - feature-list / timeline-flow: Add a sequence badge before each section. academic→plain "01." text; general/business→accent-color circle/square shape (w:3,h:5) + white number text on top; creative→emoji icon replacing the number.
+   - grid-3 / grid-2 / bento-grid: Add a short horizontal accent line at top of each cell (w:8–15%, h:0.8–1.2%, accent color). academic→opacity 0.3; creative→opacity 1.0 + can add corner emoji.
+   - split-left / split-right: Add a short accent underline below title (w:15–25%, h:0.8%, accent color). Add thin vertical accent bar left of key paragraphs (w:0.8%, h matching paragraph, accent color). academic→opacity 0.3 only; creative→multiple bars of varying widths.
+   - top-bottom: Add a horizontal divider shape between header and content zones (w:80–90%, h:0.5–1%, centered, accent color).
+   - center-hero: Place decorativeIcon as large text element (fontSize 36–48pt) above the title. academic→skip; creative→also add 2–3 small geometric shapes as background accents.
+   - quote / expert-quote: Add a large decorative quotation mark "❝" as a shape/text element behind the quote (fontSize 60–80pt, accent color). academic→opacity 0.1; general/business→opacity 0.2; creative→opacity 0.4.
+   - data-focus: Add a thin accent-color bottom border line below each data value (w matching card, h:0.5%). creative→also add small emoji in card corner.
+   - full-image: Add a semi-transparent shape behind text areas to improve readability (accent or background color, opacity 0.4–0.7).
 
 Create a visually stunning, balanced composition for this slide.`;
