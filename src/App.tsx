@@ -342,7 +342,7 @@ export default function App() {
             <img src="/favicon.png" alt="CEREBRO" className="w-full h-full object-cover" />
           </div>
           <div className="space-y-2">
-            <h1 className="text-3xl font-bold tracking-tight">CEREBRO</h1>
+            <h1 style={{ fontFamily: "'Phosphate Inline', 'Phosphate', Impact, sans-serif", letterSpacing: "0.05em" }} className="text-3xl font-black italic text-emerald-600">CEREBRO</h1>
             <p className="text-black/40 text-sm">输入您的 Gemini API Key 开启创作</p>
           </div>
           <div className="space-y-4">
