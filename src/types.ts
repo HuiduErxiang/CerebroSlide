@@ -76,6 +76,7 @@ export interface Project {
   name: string;
   createdAt: number;
   scenarioId?: ScenarioId;
+  stylePresetId?: string;
   slides: Slide[];
   script?: string;
   sourceText?: string;
@@ -103,6 +104,7 @@ export interface PresetStyle {
   colors: string[];
   fontFamily?: string;
   isCustom?: boolean;
+  isBuiltIn?: boolean;
   referenceImage?: string;
   cornerRadius?: number; // 0 to 40
   shadowIntensity?: 'none' | 'subtle' | 'medium' | 'high';
@@ -206,6 +208,9 @@ export interface UseDesignReturn {
   handleTemplateUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleStyleGuideUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
   getDesignConfig: () => DesignConfig;
+  editingStyleId: string | null;
+  startEditStyle: (style: PresetStyle) => void;
+  cancelEditStyle: () => void;
 }
 
 export interface UseAIReturn {

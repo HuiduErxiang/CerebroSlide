@@ -70,6 +70,7 @@ export function useDesign(
   const [isAnalyzingDoc, setIsAnalyzingDoc] = useState(false);
   const [isSavingStyle, setIsSavingStyle] = useState(false);
   const [newStyleName, setNewStyleName] = useState('');
+  const [editingStyleId, setEditingStyleId] = useState<string | null>(null);
 
   const allStyles = useMemo(() => [...PRESET_STYLES, ...customStyles], [customStyles]);
 
@@ -90,32 +91,92 @@ export function useDesign(
     styleGuideText,
   });
 
-  const saveCustomStyle = () => {
-    if (!newStyleName.trim()) return;
-    const newStyle: PresetStyle = {
-      id: 'custom_' + Date.now(),
-      name: newStyleName.trim(),
-      style: styleDescription,
-      requirements: styleRequirements,
-      colors: [...colors],
-      fontFamily: selectedFont,
-      isCustom: true,
-      referenceImage: templateImage || undefined,
-      cornerRadius,
-      shadowIntensity,
-      safeMargin,
-      showPageNumber,
-      footerText,
-      titleFontSize,
-      subtitleFontSize,
-      bodyFontSize,
-      imageRequirements,
-    };
-    const updated = [...customStyles, newStyle];
+  const startEditStyle = (style: PresetStyle) => {
+    setColors(style.colors);
+    setSelectedFont(style.fontFamily ?? 'Inter, sans-serif');
+    setStyleDescription(style.style);
+    setStyleRequirements(style.requirements);
+    setImageRequirements(style.imageRequirements ?? '');
+    setCornerRadius(style.cornerRadius ?? 8);
+    setShadowIntensity(style.shadowIntensity ?? 'subtle');
+    setSafeMargin(style.safeMargin ?? 5);
+    setShowPageNumber(style.showPageNumber ?? false);
+    setFooterText(style.footerText ?? '');
+    setTitleFontSize(style.titleFontSize ?? 28);
+    setSubtitleFontSize(style.subtitleFontSize ?? 18);
+    setBodyFontSize(style.bodyFontSize ?? 14);
+    setNewStyleName(style.name);
+    if (style.isBuiltIn === true) {
+      setEditingStyleId('__builtin__');
+    } else {
+      setEditingStyleId(style.id);
+    }
+  };
+
+  const cancelEditStyle = () => {
+    setEditingStyleId(null);
+    setIsSavingStyle(false);
+  };
+
+  const upsertCustomStyle = (name: string) => {
+    let updated: PresetStyle[];
+    if (editingStyleId === null || editingStyleId === '__builtin__') {
+      // 新建模式 或 内置风格 clone 为新副本
+      const newStyle: PresetStyle = {
+        id: 'custom_' + Date.now(),
+        name: name.trim(),
+        isCustom: true,
+        isBuiltIn: false,
+        style: styleDescription,
+        requirements: styleRequirements,
+        colors: [...colors],
+        fontFamily: selectedFont,
+        cornerRadius,
+        shadowIntensity,
+        safeMargin,
+        showPageNumber,
+        footerText,
+        titleFontSize,
+        subtitleFontSize,
+        bodyFontSize,
+        imageRequirements,
+        referenceImage: templateImage || undefined,
+      };
+      updated = [...customStyles, newStyle];
+    } else {
+      // 自定义风格 → 直接更新
+      updated = customStyles.map(s =>
+        s.id === editingStyleId
+          ? {
+              ...s,
+              name: name.trim(),
+              style: styleDescription,
+              requirements: styleRequirements,
+              colors: [...colors],
+              fontFamily: selectedFont,
+              cornerRadius,
+              shadowIntensity,
+              safeMargin,
+              showPageNumber,
+              footerText,
+              titleFontSize,
+              subtitleFontSize,
+              bodyFontSize,
+              imageRequirements,
+            }
+          : s
+      );
+    }
     setCustomStyles(updated);
     syncData(undefined, updated);
-    setNewStyleName('');
+    setEditingStyleId(null);
     setIsSavingStyle(false);
+    setNewStyleName('');
+  };
+
+  const saveCustomStyle = () => {
+    if (!newStyleName.trim()) return;
+    upsertCustomStyle(newStyleName.trim());
   };
 
   const deleteCustomStyle = (id: string, e: React.MouseEvent) => {
@@ -411,6 +472,9 @@ export function useDesign(
     saveCustomStyle,
     deleteCustomStyle,
     applyPreset,
+    editingStyleId,
+    startEditStyle,
+    cancelEditStyle,
     analyzeTemplateImage,
     handleTemplateUpload,
     handleStyleGuideUpload,

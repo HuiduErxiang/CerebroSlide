@@ -40,7 +40,8 @@ import {
   MessageSquare,
   FileText,
   Layers,
-  FilePlus
+  FilePlus,
+  Pencil
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import Markdown from "react-markdown";
@@ -108,6 +109,7 @@ export default function App() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scriptFileInputRef = useRef<HTMLInputElement>(null);
+  const syncDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // --- Helpers ---
 
@@ -187,6 +189,9 @@ export default function App() {
     handleTemplateUpload,
     handleStyleGuideUpload,
     getDesignConfig,
+    editingStyleId,
+    startEditStyle,
+    cancelEditStyle,
   } = useDesign(userApiKey, syncData);
 
   // Keep customStylesRef in sync so syncData always has latest styles
@@ -253,6 +258,29 @@ export default function App() {
       setScriptInput(activeProject.script || "");
     }
   }, [activeProjectId]);
+
+  // T005: Restore scenario and style preset when active project changes
+  useEffect(() => {
+    if (activeProject?.scenarioId) {
+      setSelectedScenarioId(activeProject.scenarioId);
+    } else {
+      setSelectedScenarioId('general');
+    }
+    if (activeProject?.stylePresetId) {
+      const found = allStyles.find(s => s.id === activeProject.stylePresetId);
+      if (found) {
+        applyPreset(found);
+      }
+    }
+    // NOTE: syncData must NOT be called here — this is a read-only restore
+  }, [activeProjectId]);
+
+  // T008: Clear debounce timer on unmount
+  useEffect(() => {
+    return () => {
+      if (syncDebounceRef.current) clearTimeout(syncDebounceRef.current);
+    };
+  }, []);
 
   const handleLoadUserData = async (apiKey: string, silent = false) => {
     try {
@@ -527,7 +555,13 @@ export default function App() {
                         {SCENARIOS.map((s) => (
                           <button
                             key={s.id}
-                            onClick={() => setSelectedScenarioId(s.id)}
+                            onClick={() => {
+                              const updated = projects.map(p => p.id === activeProjectId ? { ...p, scenarioId: s.id } : p);
+                              setProjects(updated);
+                              setSelectedScenarioId(s.id);
+                              if (syncDebounceRef.current) clearTimeout(syncDebounceRef.current);
+                              syncDebounceRef.current = setTimeout(() => { syncData(updated); }, 500);
+                            }}
                             className={cn(
                               "flex flex-col items-start p-3 rounded-2xl border transition-all text-left",
                               selectedScenarioId === s.id 
@@ -1238,7 +1272,13 @@ export default function App() {
               {allStyles.map(style => (
                 <div
                   key={style.id}
-                  onClick={() => applyPreset(style)}
+                  onClick={() => {
+                    applyPreset(style);
+                    const updated = projects.map(p => p.id === activeProjectId ? { ...p, stylePresetId: style.id } : p);
+                    setProjects(updated);
+                    if (syncDebounceRef.current) clearTimeout(syncDebounceRef.current);
+                    syncDebounceRef.current = setTimeout(() => { syncData(updated); }, 500);
+                  }}
                   className="p-4 rounded-2xl border border-black/5 hover:border-emerald-200 hover:bg-emerald-50 transition-all text-left group relative cursor-pointer"
                 >
                   <div className="flex items-center justify-between mb-2">
@@ -1250,14 +1290,22 @@ export default function App() {
                     </div>
                   </div>
                   <p className="text-[10px] text-black/40 line-clamp-1">{style.style}</p>
-                  {style.isCustom && (
-                    <button 
-                      onClick={(e) => deleteCustomStyle(style.id, e)}
-                      className="absolute -right-2 -top-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all shadow-lg"
+                  <div className="absolute -right-2 -top-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); startEditStyle(style); setIsSavingStyle(true); }}
+                      className="w-6 h-6 bg-emerald-500 text-white rounded-full flex items-center justify-center shadow-lg"
                     >
-                      <X size={12} />
+                      <Pencil size={10} />
                     </button>
-                  )}
+                    {style.isCustom && (
+                      <button
+                        onClick={(e) => deleteCustomStyle(style.id, e)}
+                        className="w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg"
+                      >
+                        <X size={12} />
+                      </button>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
@@ -1360,6 +1408,7 @@ export default function App() {
                     exit={{ opacity: 0, y: 10 }}
                     className="space-y-3 p-4 bg-emerald-50 rounded-2xl"
                   >
+                    <p className="text-xs font-bold text-emerald-700">{editingStyleId !== null ? '编辑风格' : '保存风格'}</p>
                     <input 
                       autoFocus
                       value={newStyleName}
@@ -1369,7 +1418,7 @@ export default function App() {
                     />
                     <div className="flex gap-2">
                       <button onClick={saveCustomStyle} className="flex-1 py-2 bg-emerald-600 text-white text-xs font-bold rounded-lg">保存</button>
-                      <button onClick={() => setIsSavingStyle(false)} className="flex-1 py-2 bg-black/5 text-black/40 text-xs font-bold rounded-lg">取消</button>
+                      <button onClick={() => { cancelEditStyle(); setIsSavingStyle(false); }} className="flex-1 py-2 bg-black/5 text-black/40 text-xs font-bold rounded-lg">取消</button>
                     </div>
                   </motion.div>
                 ) : (

@@ -203,7 +203,7 @@ CREATE TABLE IF NOT EXISTS user_data (
 
 ## Agent 工作约定
 
-- **修改代码后必须运行**：`npm run lint` 确保无类型错误
+- **修改代码后必须参考下方“测试验证约束”环节进行验证
 - **修改某个模块前，先读取该目录的 AGENTS.md** 了解接口约定和依赖关系
 - **若需要了解项目过往迭代内容，参考CHANGELOG.md中的内容
 - **不得在未更新 AGENTS.md 的情况下改变模块的对外接口**
@@ -213,6 +213,22 @@ CREATE TABLE IF NOT EXISTS user_data (
 - **凡依赖固定字段名解析 AI JSON 的调用，`responseMimeType` 和 `responseSchema` 必须成对出现**
 - **session token 的获取必须通过 `getSessionToken()` 函数**，不得直接调用 `/api/session` 端点
 - **参考 PITFALLS.md** 了解已知踩坑，避免重复犯同类错误
+
+### 测试验证约束
+
+每次代码改动完成后，按以下规则决定需要运行哪些测试：
+
+| 改动范围 | lint | `npm run test` | `npm run test:e2e` |
+|----------|:----:|:--------------:|:------------------:|
+| 仅类型定义（`types.ts`、接口） | ✅ | — | — |
+| 仅 UI 层（`App.tsx` JSX/样式，无逻辑变更） | ✅ | — | — |
+| `hooks/`、`services/`、`utils.ts`、`constants.ts` 有逻辑变更 | ✅ | ✅ | — |
+| `server.ts` API 逻辑变更 | ✅ | ✅ | — |
+| 跨前后端的完整用户流程变更（登录、生成、导出） | ✅ | ✅ | ✅ |
+
+**判断标准**：改动了"输入→输出的映射关系"（函数行为、分支逻辑、数据转换），就需要跑单测。
+
+**注意**：e2e 测试通过 `page.route()` mock 网络请求，不能验证真实认证逻辑的正确性（见 PITFALLS P004），不可用 e2e 通过来替代对认证/加密逻辑的单测覆盖。
 
 ### Task 进度追踪
 

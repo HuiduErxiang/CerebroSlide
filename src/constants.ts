@@ -103,28 +103,32 @@ export const PRESET_STYLES: PresetStyle[] = [
     name: "科技深蓝",
     style: "未来感、高科技、深色调",
     requirements: "发光效果、细线条、网格背景、青色装饰",
-    colors: ["#020617", "#22D3EE", "#1E293B", "#F8FAFC"]
+    colors: ["#020617", "#22D3EE", "#1E293B", "#F8FAFC"],
+    isBuiltIn: true
   },
   {
     id: "minimal",
     name: "极简白灰",
     style: "纯净、呼吸感、极简主义",
     requirements: "大量留白、无边框、柔和阴影、精致排版",
-    colors: ["#FFFFFF", "#18181B", "#F4F4F5", "#18181B"]
+    colors: ["#FFFFFF", "#18181B", "#F4F4F5", "#18181B"],
+    isBuiltIn: true
   },
   {
     id: "business",
     name: "商务金黑",
     style: "高端、稳重、专业商务",
     requirements: "直角边框、金色点缀、对比鲜明、权威感",
-    colors: ["#000000", "#D4AF37", "#262626", "#FFFFFF"]
+    colors: ["#000000", "#D4AF37", "#262626", "#FFFFFF"],
+    isBuiltIn: true
   },
   {
     id: "creative",
     name: "活力艺术",
     style: "孟菲斯风格、大胆、充满活力",
     requirements: "不规则形状、粗边框、高饱和度颜色、趣味性",
-    colors: ["#FFF7ED", "#F97316", "#84CC16", "#000000"]
+    colors: ["#FFF7ED", "#F97316", "#84CC16", "#000000"],
+    isBuiltIn: true
   }
 ];
 
@@ -395,7 +399,9 @@ CRITICAL DESIGN RULES (NON-NEGOTIABLE):
    Current scenario: ${scenarioId || 'general'}
 
    LAYOUT-SPECIFIC DECORATION RULES (apply within scenario constraints above):
-   - feature-list / timeline-flow: Add a sequence badge before each section. academic→plain "01." text; general/business→accent-color circle/square shape (w:3,h:5) + white number text on top; creative→emoji icon replacing the number.
+   BADGE CONTRAST RULE (applies to ALL scenarios that use background badges): The badge background color and the number/text on top MUST have strong contrast. Use accent color as badge background with background color (${colors[0]}) as the text, OR use background color as badge with accent color as text. Never use same-family colors for badge and its text.
+
+   - feature-list / timeline-flow: Add a sequence badge before each section. academic→plain "01." text only (no badge shape); general/business→accent-color shape (w:3,h:5) + background-color number text on top (apply BADGE CONTRAST RULE); creative→accent-color shape (w:3,h:5, circle or square per style) + background-color number text on top, AND optionally add a small emoji icon alongside the badge.
    - grid-3 / grid-2 / bento-grid: Add a short horizontal accent line at top of each cell (w:8–15%, h:0.8–1.2%, accent color). academic→opacity 0.3; creative→opacity 1.0 + can add corner emoji.
    - split-left / split-right: Add a short accent underline below title (w:15–25%, h:0.8%, accent color). Add thin vertical accent bar left of key paragraphs (w:0.8%, h matching paragraph, accent color). academic→opacity 0.3 only; creative→multiple bars of varying widths.
    - top-bottom: Add a horizontal divider shape between header and content zones (w:80–90%, h:0.5–1%, centered, accent color).

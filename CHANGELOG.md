@@ -5,6 +5,18 @@
 
 ---
 
+## [0.4.0] — 项目级设计记忆、预设风格编辑与精炼强制中文输出 (2026-04-08)
+
+**Branch**: `004-project-style-memory`
+
+### 变更内容
+
+1. **项目记忆（US1）**：切换项目时自动恢复该项目最后选择的场景（`scenarioId`）和风格预设（`stylePresetId`）；用户变更后 debounce 500ms 写回项目并同步云端+本地 IndexedDB
+2. **风格编辑（US2）**：预设风格卡片增加编辑按钮（group-hover 显现）；内置风格编辑时 clone 为新副本，自定义风格直接更新；保存弹窗支持编辑/新建双模式，标题动态切换「编辑风格」/「保存风格」
+3. **精炼中文约束（US3）**：`refineOutlineItem` prompt 中 `pageStyle` 字段强制要求输出中文（Mandarin），其他字段语言跟随输入
+4. **类型扩展**：`Project.stylePresetId`、`PresetStyle.isBuiltIn`、`UseDesignReturn` 新增 `editingStyleId/startEditStyle/cancelEditStyle`
+5. **内置风格标记**：`PRESET_STYLES` 所有条目添加 `isBuiltIn: true`
+
 ## [0.3.0] — 幻灯片渲染与生成质量深度打磨 (2026-04-07)
 
 **Branch**: `002-fix-slide-quality`（延续迭代）

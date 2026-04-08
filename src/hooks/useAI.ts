@@ -593,7 +593,8 @@ export function useAI(
           "highlights": [...]
         }
         
-        Keep the language the same as the input.`,
+        IMPORTANT: The "pageStyle" field MUST be written entirely in Chinese (Mandarin). Keep proper nouns (人名、品牌名、药品名等) in their original form.
+        Keep the language the same as the input for all other fields (realBody, decorativeIcon, keyData, quotes, highlights).`,
           config: {
             responseMimeType: 'application/json',
             temperature: 0.4,
