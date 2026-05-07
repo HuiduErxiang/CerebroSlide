@@ -218,7 +218,7 @@ CREATE TABLE IF NOT EXISTS user_data (
 
 每次代码改动完成后，按以下规则决定需要运行哪些测试：
 
-| 改动范围 | lint | `npm run test` | `npm run test:e2e` |
+| 改动范围 | lint | `npm run test` | `npm run test:e2e`
 |----------|:----:|:--------------:|:------------------:|
 | 仅类型定义（`types.ts`、接口） | ✅ | — | — |
 | 仅 UI 层（`App.tsx` JSX/样式，无逻辑变更） | ✅ | — | — |
